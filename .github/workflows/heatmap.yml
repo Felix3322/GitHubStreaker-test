@@ -1,0 +1,39 @@
+name: Heatmap Painter
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: heatmap-daily
+  cancel-in-progress: false
+
+env:
+  DATA_DIR: "heatmap"
+  COMMITTER_NAME: "Heatmap Bot"
+  COMMITTER_EMAIL: "bot@example.com"
+
+jobs:
+  paint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Run heatmap painter
+        run: python3 tools/heatmap_painter.py
+      - name: Commit and push
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "$COMMITTER_NAME"
+          git config user.email "$COMMITTER_EMAIL"
+          git commit -am "chore: paint heatmap"
+          git push
